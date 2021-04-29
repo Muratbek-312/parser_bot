@@ -6,10 +6,41 @@ from keyboards.inline import inline_keyboard as in_key
 
 bot = telebot.TeleBot(config("TOKEN"))
 
+BASE_URL = 'https://www.eldorado.ru/c/smartfony/'
+
+def get_url(url):
+    headers = {"User-Agent": "Mozilla/5.0 (X11; U; Linux i686) Gecko/20071127 Firefox/2.0.0.11"}
+    response = requests.get(url, headers=headers)
+    return response.text
+
+
+def get_soup(html):
+    soup = BeautifulSoup(html, 'lxml')
+    return soup
+
+
+title = {}
+images = {}
+price = {}
+
 
 @bot.message_handler(commands=['start', ])
 def welcome(message):
     chat_id = message.chat.id
-    bot.send_message(chat_id, 'Hello', reply_markup=in_key)
+    html = get_url(BASE_URL)
+    soup = get_soup(html)
+    info = soup.find("div", class_="ListingContent_listingContentWrapper__37KSE").find("ul", class_="GridInner_list___8u79").find_all("li", class_='ListingProductCardList_productCardListingWrapper__3-o9i')
+    count = 0
+
+    while count < 16:
+        for i, a in enumerate(info, 1):
+            title[i] = a.find("div", class_="ListingProductCardList_productCardListingTitle__1eVYx").text
+            count += 1
+            if count >= 16:
+                break
+    name_title = ''
+    for i in range(1, len(title) + 1):
+        name_title += f"{i}: {title[i]}\n"
+    bot.send_message(chat_id, name_title, reply_markup=in_key)
 
 bot.polling(none_stop=True)
